@@ -1,0 +1,124 @@
+-- Gui principal
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 270, 0, 160)
+Frame.Position = UDim2.new(0.35, 0, 0.3, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.Active = true
+Frame.Draggable = true
+
+local UICorner = Instance.new("UICorner", Frame)
+UICorner.CornerRadius = UDim.new(0, 12)
+
+-- Título
+local Title = Instance.new("TextLabel", Frame)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "🔥 Auto Backstab Hub"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
+local TitleCorner = Instance.new("UICorner", Title)
+TitleCorner.CornerRadius = UDim.new(0, 12)
+
+-- Botão toggle
+local Toggle = Instance.new("TextButton", Frame)
+Toggle.Size = UDim2.new(0, 220, 0, 40)
+Toggle.Position = UDim2.new(0.5, -110, 0, 40)
+Toggle.Text = "Auto Backstab: OFF"
+Toggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+Toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+Toggle.Font = Enum.Font.GothamBold
+Toggle.TextSize = 14
+local ToggleCorner = Instance.new("UICorner", Toggle)
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+
+-- Caixa de texto para range
+local RangeBox = Instance.new("TextBox", Frame)
+RangeBox.Size = UDim2.new(0, 220, 0, 40)
+RangeBox.Position = UDim2.new(0.5, -110, 0, 90)
+RangeBox.PlaceholderText = "Range em studs"
+RangeBox.Text = "30"
+RangeBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+RangeBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+RangeBox.Font = Enum.Font.Gotham
+RangeBox.TextSize = 14
+local RangeCorner = Instance.new("UICorner", RangeBox)
+RangeCorner.CornerRadius = UDim.new(0, 8)
+
+-- Status
+local Status = Instance.new("TextLabel", Frame)
+Status.Size = UDim2.new(0, 220, 0, 30)
+Status.Position = UDim2.new(0.5, -110, 0, 135)
+Status.Text = "Status: Idle"
+Status.BackgroundTransparency = 1
+Status.TextColor3 = Color3.fromRGB(255, 255, 255)
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 14
+
+-- Script funcional
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local enabled = false
+local isBackstabbing = false
+local cooldown = 28 -- cooldown fixo de 28 segundos
+
+Toggle.MouseButton1Click:Connect(function()
+	enabled = not enabled
+	if enabled then
+		Toggle.Text = "Auto Backstab: ON"
+		Toggle.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+	else
+		Toggle.Text = "Auto Backstab: OFF"
+		Toggle.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		Status.Text = "Status: Idle"
+	end
+end)
+
+-- Loop principal
+RunService.Heartbeat:Connect(function()
+	if not enabled or isBackstabbing then return end
+
+	local range = tonumber(RangeBox.Text) or 30
+	local char = LocalPlayer.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+	local root = char.HumanoidRootPart
+
+	for _, enemy in pairs(workspace.Players.Killers:GetChildren()) do
+		if enemy:FindFirstChild("HumanoidRootPart") then
+			local dist = (enemy.HumanoidRootPart.Position - root.Position).Magnitude
+			if dist <= range then
+				isBackstabbing = true
+				Status.Text = "Status: Atacando"
+
+				-- Executa backstab por 1 segundo
+				local start = tick()
+				while tick() - start < 1 and enabled do
+					local backPos = enemy.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+					root.CFrame = backPos
+
+					-- Simula apertar "Q"
+					game:GetService("VirtualInputManager"):SendKeyEvent(true, "Q", false, game)
+					game:GetService("VirtualInputManager"):SendKeyEvent(false, "Q", false, game)
+
+					RunService.Heartbeat:Wait()
+				end
+
+				-- Inicia cooldown
+				Status.Text = "Status: Cooldown (" .. cooldown .. "s)"
+				for i = cooldown, 1, -1 do
+					if not enabled then break end
+					Status.Text = "Status: Cooldown (" .. i .. "s)"
+					task.wait(1)
+				end
+
+				Status.Text = "Status: Idle"
+				isBackstabbing = false
+			end
+		end
+	end
+end)
