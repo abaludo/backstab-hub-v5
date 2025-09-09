@@ -64,7 +64,7 @@ local RunService = game:GetService("RunService")
 
 local enabled = false
 local isBackstabbing = false
-local cooldown = 27.8 -- cooldown fixo de 28 segundos
+local cooldown = 28 -- cooldown fixo de 28 segundos
 
 Toggle.MouseButton1Click:Connect(function()
 	enabled = not enabled
