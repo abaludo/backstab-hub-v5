@@ -2,7 +2,7 @@
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 270, 0, 160)
+Frame.Size = UDim2.new(0, 270, 0, 200)
 Frame.Position = UDim2.new(0.35, 0, 0.3, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 Frame.Active = true
@@ -22,7 +22,7 @@ Title.Font = Enum.Font.GothamBold
 local TitleCorner = Instance.new("UICorner", Title)
 TitleCorner.CornerRadius = UDim.new(0, 12)
 
--- Botão toggle
+-- Botão toggle Auto Backstab
 local Toggle = Instance.new("TextButton", Frame)
 Toggle.Size = UDim2.new(0, 220, 0, 40)
 Toggle.Position = UDim2.new(0.5, -110, 0, 40)
@@ -47,10 +47,22 @@ RangeBox.TextSize = 14
 local RangeCorner = Instance.new("UICorner", RangeBox)
 RangeCorner.CornerRadius = UDim.new(0, 8)
 
+-- Botão toggle ESP
+local EspButton = Instance.new("TextButton", Frame)
+EspButton.Size = UDim2.new(0, 220, 0, 35)
+EspButton.Position = UDim2.new(0.5, -110, 0, 140)
+EspButton.Text = "ESP: OFF"
+EspButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+EspButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+EspButton.Font = Enum.Font.GothamBold
+EspButton.TextSize = 14
+local EspCorner = Instance.new("UICorner", EspButton)
+EspCorner.CornerRadius = UDim.new(0, 8)
+
 -- Status
 local Status = Instance.new("TextLabel", Frame)
 Status.Size = UDim2.new(0, 220, 0, 30)
-Status.Position = UDim2.new(0.5, -110, 0, 135)
+Status.Position = UDim2.new(0.5, -110, 0, 175)
 Status.Text = "Status: Idle"
 Status.BackgroundTransparency = 1
 Status.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -63,9 +75,35 @@ local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
 local enabled = false
+local espEnabled = false
 local isBackstabbing = false
 local cooldown = 28 -- cooldown fixo de 28 segundos
 
+-- Função Highlight
+local function addHighlight(model, color)
+	if not model:FindFirstChild("HumanoidRootPart") then return end
+	if model:FindFirstChild("ESP_Highlight") then return end
+
+	local hl = Instance.new("Highlight")
+	hl.Name = "ESP_Highlight"
+	hl.FillColor = color
+	hl.OutlineColor = color
+	hl.FillTransparency = 0.5
+	hl.Parent = model
+end
+
+-- Remover highlights
+local function removeHighlights()
+	for _, folder in pairs(workspace.Players:GetChildren()) do
+		for _, obj in pairs(folder:GetChildren()) do
+			if obj:FindFirstChild("ESP_Highlight") then
+				obj.ESP_Highlight:Destroy()
+			end
+		end
+	end
+end
+
+-- Toggle Auto Backstab
 Toggle.MouseButton1Click:Connect(function()
 	enabled = not enabled
 	if enabled then
@@ -78,7 +116,37 @@ Toggle.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Loop principal
+-- Toggle ESP
+EspButton.MouseButton1Click:Connect(function()
+	espEnabled = not espEnabled
+	if espEnabled then
+		EspButton.Text = "ESP: ON"
+		EspButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+	else
+		EspButton.Text = "ESP: OFF"
+		EspButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		removeHighlights()
+	end
+end)
+
+-- Loop ESP
+task.spawn(function()
+	while true do
+		task.wait(1)
+		if espEnabled then
+			-- killers vermelho
+			for _, killer in pairs(workspace.Players.Killers:GetChildren()) do
+				addHighlight(killer, Color3.fromRGB(255, 0, 0))
+			end
+			-- survivors verde
+			for _, survivor in pairs(workspace.Players.Survivors:GetChildren()) do
+				addHighlight(survivor, Color3.fromRGB(0, 255, 0))
+			end
+		end
+	end
+end)
+
+-- Loop principal Backstab
 RunService.Heartbeat:Connect(function()
 	if not enabled or isBackstabbing then return end
 
